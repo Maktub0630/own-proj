@@ -29,12 +29,25 @@ struct fifo {
 // Create a new string FIFO object that can contain up to size elements.
 struct fifo *fifo_new(int size) {
     // COMPLETE THIS PART
+    struct fifo *fifo = malloc(sizeof(struct fifo) + size * sizeof(char *)); // allocate memory for the struct (size, empty, produce, consume and the consume) and the array (elements of consume)
+    fifo->size = size;
+    fifo->empty = 1;
+    fifo->produce = 0;
+    fifo->consume = 0;
+    memset(fifo->contents, 0, size * sizeof(char *)); // set the consume array's size
+    return fifo;
 }
 
 
 // Free a FIFO object and all its contents.
 void fifo_free(struct fifo *fifo) {
     // COMPLETE THIS PART
+    for (int i = 0; i < fifo->size; i++) {
+        if (fifo->contents[i] != NULL) {
+            free(fifo->contents[i]); //free consume array
+        }
+    }
+    free(fifo); // free the object
 }
 
 // Push a string into the FIFO.
@@ -43,6 +56,14 @@ void fifo_free(struct fifo *fifo) {
 // If unsuccessful, the FIFO remains unchanged and no memory is allocated.
 int fifo_push(struct fifo *fifo, const char *str) {
     // COMPLETE THIS PART
+    if (!fifo->empty && fifo->produce == fifo->consume) { //if the FIFO is full i.e. produce and consume are at the same index and the FIFO is not empty
+        return 0;
+    }
+    fifo->contents[fifo->produce] = strdup(str); // copy the string to the consume array. Using copy to avoid memory leaks, e.g. if the string is freed before the FIFO is freed
+    fifo->produce = (fifo->produce + 1) % fifo->size;
+    fifo->empty = 0;
+    return 1;
+
 }
 
 // Pull a string from the FIFO.
@@ -51,6 +72,16 @@ int fifo_push(struct fifo *fifo, const char *str) {
 // is responsible for freeing it.
 char *fifo_pull(struct fifo *fifo) {
     // COMPLETE THIS PART
+    if (fifo->empty) { // if the FIFO is empty
+        return NULL;
+    }
+    char *str = fifo->contents[fifo->consume]; // get the string from the consume array. asterisk (*) is used to get the value of the pointer
+    fifo->contents[fifo->consume] = NULL; // set the value of the consume array to NULL
+    fifo->consume = (fifo->consume + 1) % fifo->size; // increment the consume index
+    if (fifo->consume == fifo->produce) {
+        fifo->empty = 1; // if the consume index is equal to the produce index, the FIFO is empty
+    }
+    return str;
 }
 
 void fifo_dump(struct fifo *fifo) {
